@@ -60,8 +60,8 @@ available_disk_percent=$(echo "scale=2; $available_disk_kb *100/$size_disk_kb" |
 
 print_header "💾 Disk Usage"
 printf "Disk Size       : ${YELLOW}%-10s${RESET}\n" "$size_disk"
-printf "Used Space      : ${YELLOW}%-10s${RESET} (%s%%)\n" "$used_disk" "$used_percent"
-printf "Available Space : ${YELLOW}%-10s${RESET} (%s%%)\n" "$available_disk" "$avail_percent"
+printf "Used Space      : ${YELLOW}%-10s${RESET} (%s%%)\n" "$used_disk" "$used_disk_percent"
+printf "Available Space : ${YELLOW}%-10s${RESET} (%s%%)\n" "$available_disk" "$available_disk_percent"
 
 
 # ------------------------ Top Processes ------------------------

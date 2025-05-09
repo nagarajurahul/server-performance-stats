@@ -95,7 +95,7 @@ users_info_more=true
 
 print_header "More info on Logged In Users"
 
-if [[ "$users_info_more"==false ]]; then
+if [[ "$users_info_more" == false ]]; then
   echo "USER     TTY          LOGIN-TIME        FROM"
   who
 else

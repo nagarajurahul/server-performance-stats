@@ -105,6 +105,8 @@ fi
 
 # ------------------------ Failed Log In Attempts ------------------------
 
+print_header "Logs of Failed Log In Attempts"
+
 # Check which log file exists in the system for authentication logs
 if [ -f /var/log/auth.log ]; then
   # Debian/Ubuntu

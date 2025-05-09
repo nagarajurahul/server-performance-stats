@@ -91,7 +91,7 @@ ps aux --sort=-%mem | awk 'NR==1 || NR<=6 { printf "%-10s %-6s %-5s %-5s %s\n", 
 print_header "Users currently Logged In"
 users
 
-users_info_more=false
+users_info_more=true
 
 print_header "More info on Logged In Users"
 

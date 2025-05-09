@@ -93,7 +93,7 @@ users
 
 users_info_more=false
 
-if ["$users_info_more"==false]; then
+if [["$users_info_more"==false']]; then
   who
 else
   w

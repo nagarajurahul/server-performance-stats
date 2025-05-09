@@ -89,4 +89,12 @@ ps aux --sort=-%mem | awk 'NR==1 || NR<=6 { printf "%-10s %-6s %-5s %-5s %s\n", 
 # ------------------------ Users currently Logged In ------------------------
 
 print_header "Users currently Logged In"
-echo who
+users
+
+users_info_more=false
+
+if ["$users_info_more"==false]; then
+  who
+else
+  w
+fi

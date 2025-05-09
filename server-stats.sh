@@ -101,3 +101,17 @@ if [[ "$users_info_more" == false ]]; then
 else
   w
 fi
+
+
+# ------------------------ Failed Log In Attempts ------------------------
+
+# Check which log file exists in the system for authentication logs
+if [ -f /var/log/auth.log ]; then
+  # Debian/Ubuntu
+  grep "Failed" /var/log/auth.log
+elif [ -f /var/log/secure.log ]; then
+  # RHEL/CentOS
+  grep "Failed" /var/log/secure.log 
+else
+  echo "Sorry, no recognised authentication log file found"
+fi

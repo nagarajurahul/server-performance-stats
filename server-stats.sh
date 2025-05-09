@@ -84,3 +84,9 @@ ps aux --sort=-%mem | awk 'NR==1 || NR<=6 { printf "%-10s %-6s %-5s %-5s %s\n", 
 # echo "TOP 5 processes consuming Memory:" 
 # printf "\n"
 # echo "$top_5_processes_by_memory"
+
+
+# ------------------------ Users currently Logged In ------------------------
+
+print_header "Users currently Logged In"
+echo who

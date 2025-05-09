@@ -107,12 +107,17 @@ fi
 
 print_header "Logs of Failed Log In Attempts"
 
+# Resources
+# https://www.tecmint.com/find-failed-ssh-login-attempts-in-linux/
+
 # Check which log file exists in the system for authentication logs
 if [ -f /var/log/auth.log ]; then
   # Debian/Ubuntu
+  grep "Failed password" /var/log/auth.log | awk ‘{print $11}’ | uniq -c | sort -nr
   grep "Failed|Failure" /var/log/auth.log
 elif [ -f /var/log/secure.log ]; then
   # RHEL/CentOS
+  grep "Failed password" /var/log/secure.log | awk ‘{print $11}’ | uniq -c | sort -nr
   grep "Failed|Failure" /var/log/secure.log 
 else
   echo "Sorry, no recognised authentication log file found"

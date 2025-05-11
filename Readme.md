@@ -61,7 +61,7 @@ No external packages required.
 To monitor performance at intervals, set up a cron job like:
 
 ```
-*/5* ** * /path/to/server-stats.sh >> /path/to/log.txt
+*/5* * * * /path/to/server-stats.sh >> /path/to/log.txt
 ```
 
 ## Feel free to customize or extend the script as needed!

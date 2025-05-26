@@ -114,11 +114,11 @@ print_header "Logs of Failed Log In Attempts"
 if [ -f /var/log/auth.log ]; then
   # Debian/Ubuntu
   grep "Failed password" /var/log/auth.log | awk '{print $11}' | uniq -c | sort -nr
-  grep "Failed|Failure" /var/log/auth.log
+  grep -E "Failed|Failure" /var/log/auth.log
 elif [ -f /var/log/secure ]; then
   # RHEL/CentOS
   grep "Failed password" /var/log/secure | awk '{print $11}' | uniq -c | sort -nr
-  grep "Failed|Failure" /var/log/secure
+  grep -E "Failed|Failure" /var/log/secure
 else
   echo "Sorry, no recognised authentication log file found"
 fi

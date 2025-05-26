@@ -112,14 +112,14 @@ fi
 if [ -f /var/log/auth.log ]; then
   # Debian/Ubuntu
   # grep "Failed password" /var/log/auth.log | awk '{print $11}' | uniq -c | sort -nr
-  echo -e "\nTop IPs causing failed logins:"
+  print_header "Top IPs causing failed logins:"
   grep "Failed password" /var/log/auth.log | awk '{for(i=1;i<=NF;i++){if($i=="from"){print $(i+1)}}}' | sort | uniq -c | sort -nr
   print_header "Logs of Failed Log In Attempts"
   grep -E "Failed|Failure" /var/log/auth.log
 elif [ -f /var/log/secure ]; then
   # RHEL/CentOS
   # grep "Failed password" /var/log/secure | awk '{print $11}' | uniq -c | sort -nr
-  echo -e "\nTop IPs causing failed logins:"
+  print_header "Top IPs causing failed logins:"
   grep "Failed password" /var/log/auth.log | awk '{for(i=1;i<=NF;i++){if($i=="from"){print $(i+1)}}}' | sort | uniq -c | sort -nr
   print_header "Logs of Failed Log In Attempts"
   grep -E "Failed|Failure" /var/log/secure

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exec > >(tee -a "server-stats-$(date '+%F_%H-%M-%S').log") 2>&1
+
 # Colors
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -14,6 +16,9 @@ print_header() {
     echo -e "\n${CYAN}${BOLD}$1${RESET}"
     echo "$separator"
 }
+
+print_header "Server Stats Run: $(date '+%F %T')"
+
 
 # ------------------------ OS Info ------------------------
 

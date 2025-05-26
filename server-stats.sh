@@ -125,3 +125,45 @@ ps aux --sort=-%mem | awk 'NR==1 || NR<=6 { printf "%-10s %-6s %-5s %-5s %s\n", 
 # echo "TOP 5 processes consuming Memory:" 
 # printf "\n"
 # echo "$top_5_processes_by_memory"
+
+
+# ------------------------ Users currently Logged In ------------------------
+
+print_header "Users currently Logged In"
+users
+
+users_info_more=false
+
+print_header "More info on Logged In Users"
+
+if [[ "$users_info_more" == false ]]; then
+  echo "USER     TTY          LOGIN-TIME        FROM"
+  who
+else
+  w
+fi
+
+
+# ------------------------ Failed Log In Attempts ------------------------
+
+# Resources
+# https://www.tecmint.com/find-failed-ssh-login-attempts-in-linux/
+
+# Check which log file exists in the system for authentication logs
+if [ -f /var/log/auth.log ]; then
+  # Debian/Ubuntu
+  # grep "Failed password" /var/log/auth.log | awk '{print $11}' | uniq -c | sort -nr
+  print_header "Top IPs causing failed logins:"
+  grep "Failed password" /var/log/auth.log | awk '{for(i=1;i<=NF;i++){if($i=="from"){print $(i+1)}}}' | sort | uniq -c | sort -nr
+  print_header "Logs of Failed Log In Attempts"
+  grep -E "Failed|Failure" /var/log/auth.log
+elif [ -f /var/log/secure ]; then
+  # RHEL/CentOS
+  # grep "Failed password" /var/log/secure | awk '{print $11}' | uniq -c | sort -nr
+  print_header "Top IPs causing failed logins:"
+  grep "Failed password" /var/log/auth.log | awk '{for(i=1;i<=NF;i++){if($i=="from"){print $(i+1)}}}' | sort | uniq -c | sort -nr
+  print_header "Logs of Failed Log In Attempts"
+  grep -E "Failed|Failure" /var/log/secure
+else
+  echo "Sorry, no recognised authentication log file found"
+fi

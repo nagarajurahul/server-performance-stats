@@ -12,6 +12,8 @@
 - ✅ **Top Processes:**
   - Top 5 processes by CPU usage
   - Top 5 processes by Memory usage
+- ✅ **Output to Log File:** All the outputs of the bash script are saved to log in the form of 
+`server-stats-$(date '+%F_%H-%M-%S')`
 
 ---
 

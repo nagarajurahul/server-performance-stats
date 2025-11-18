@@ -4,7 +4,7 @@
 # Enhanced Server Statistics Script
 # Description: Comprehensive server monitoring and statistics collection
 # Supports: Ubuntu, Debian, RHEL, CentOS, Fedora, AlmaLinux, Rocky Linux
-# Author: System Administrator
+# Author: Rahul Nagaraju
 # Version: 2.0
 #==============================================================================
 

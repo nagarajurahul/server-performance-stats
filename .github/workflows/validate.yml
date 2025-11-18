@@ -1,0 +1,26 @@
+name: Validate Server Stats Repo
+
+on:
+  pull_request:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Validate contract files
+      run: |
+        if [ ! -f enhanced-server-stats.sh ]; then
+          echo "ERROR: enhanced-server-stats.sh missing."
+          exit 1
+        fi
+
+        chmod +x server-stats.sh
+    
+    - name: Run ShellCheck
+      uses: ludeeus/action-shellcheck@v2

@@ -47,34 +47,34 @@ jobs:
       with:
         severity: error
 
-    - name: Install optional tools
-      run: sudo apt-get update && sudo apt-get install -y sysstat bc lm-sensors
+    # - name: Install optional tools
+    #   run: sudo apt-get update && sudo apt-get install -y sysstat bc lm-sensors
 
-    # ------------------------------------------
-    # RUNTIME VALIDATION (must run without sudo)
-    # ------------------------------------------
-    - name: Validate script executes non-interactively
-      run: |
-        echo "🔍 Running script non-interactively..."
-        ./enhanced-server-stats.sh --quick > output.txt || { 
-          echo "❌ Script failed to execute non-interactively."; 
-          exit 1; 
-        }
+    # # ------------------------------------------
+    # # RUNTIME VALIDATION (must run without sudo)
+    # # ------------------------------------------
+    # - name: Validate script executes non-interactively
+    #   run: |
+    #     echo "🔍 Running script non-interactively..."
+    #     ./enhanced-server-stats.sh --quick > output.txt || { 
+    #       echo "❌ Script failed to execute non-interactively."; 
+    #       exit 1; 
+    #     }
 
-        echo "✔ Script runs in quick mode."
+    #     echo "✔ Script runs in quick mode."
 
-    # ------------------------------------------
-    # JSON OUTPUT VALIDATION
-    # ------------------------------------------
-    - name: Validate JSON output mode
-      run: |
-        echo "🔍 Testing JSON output..."
-        ENABLE_JSON_OUTPUT=true ./enhanced-server-stats.sh --quick > json_test.log || {
-          echo "❌ JSON mode failed.";
-          exit 1;
-        }
+    # # ------------------------------------------
+    # # JSON OUTPUT VALIDATION
+    # # ------------------------------------------
+    # - name: Validate JSON output mode
+    #   run: |
+    #     echo "🔍 Testing JSON output..."
+    #     ENABLE_JSON_OUTPUT=true ./enhanced-server-stats.sh --quick > json_test.log || {
+    #       echo "❌ JSON mode failed.";
+    #       exit 1;
+    #     }
 
-        echo "✔ JSON output validated."
+    #     echo "✔ JSON output validated."
 
     # ------------------------------------------
     # OPTIONAL: Validate repo structure

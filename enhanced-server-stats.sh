@@ -11,29 +11,136 @@
 # Exit on error, undefined variables, and pipe failures
 set -euo pipefail
 
-# Configuration
-readonly SCRIPT_VERSION="2.0"
-readonly LOG_DIR="${LOG_DIR:-./logs}"
-readonly MAX_LOG_FILES="${MAX_LOG_FILES:-30}"
-readonly ENABLE_JSON_OUTPUT="${ENABLE_JSON_OUTPUT:-false}"
-readonly ALERT_CPU_THRESHOLD="${ALERT_CPU_THRESHOLD:-80}"
-readonly ALERT_MEM_THRESHOLD="${ALERT_MEM_THRESHOLD:-85}"
-readonly ALERT_DISK_THRESHOLD="${ALERT_DISK_THRESHOLD:-90}"
+# Configuration (declare early, before help function)
+SCRIPT_VERSION="2.0"
+LOG_DIR="${LOG_DIR:-./logs}"
+MAX_LOG_FILES="${MAX_LOG_FILES:-30}"
+ENABLE_JSON_OUTPUT="${ENABLE_JSON_OUTPUT:-false}"
+ALERT_CPU_THRESHOLD="${ALERT_CPU_THRESHOLD:-80}"
+ALERT_MEM_THRESHOLD="${ALERT_MEM_THRESHOLD:-85}"
+ALERT_DISK_THRESHOLD="${ALERT_DISK_THRESHOLD:-90}"
 
-# Colors and formatting
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly CYAN='\033[1;36m'
-readonly MAGENTA='\033[0;35m'
-readonly BLUE='\033[0;34m'
-readonly RESET='\033[0m'
-readonly BOLD=$(tput bold 2>/dev/null || echo '')
-readonly NORMAL=$(tput sgr0 2>/dev/null || echo '')
+# Colors and formatting (will be cleared if --no-color is used)
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[1;36m'
+MAGENTA='\033[0;35m'
+BLUE='\033[0;34m'
+RESET='\033[0m'
+BOLD=$(tput bold 2>/dev/null || echo '')
+NORMAL=$(tput sgr0 2>/dev/null || echo '')
 readonly SEPARATOR="================================================================================"
 
 # Global variables for JSON output
 declare -A json_data
+
+#==============================================================================
+# Command-line Arguments
+#==============================================================================
+
+show_help() {
+    cat << EOF
+Enhanced Server Statistics Script v${SCRIPT_VERSION}
+
+Usage: $0 [OPTIONS]
+
+OPTIONS:
+    -h, --help              Show this help message
+    -j, --json              Enable JSON output
+    -q, --quick             Quick mode (skip I/O stats and temperature)
+    -s, --security-only     Show only security information
+    --no-color              Disable colored output
+    --cpu-alert PERCENT     Set CPU alert threshold (default: 80)
+    --mem-alert PERCENT     Set memory alert threshold (default: 85)
+    --disk-alert PERCENT    Set disk alert threshold (default: 90)
+
+ENVIRONMENT VARIABLES:
+    LOG_DIR                 Log directory (default: ./logs)
+    MAX_LOG_FILES          Number of log files to keep (default: 30)
+    ENABLE_JSON_OUTPUT     Enable JSON export (default: false)
+    ALERT_CPU_THRESHOLD    CPU alert threshold percentage
+    ALERT_MEM_THRESHOLD    Memory alert threshold percentage
+    ALERT_DISK_THRESHOLD   Disk alert threshold percentage
+
+EXAMPLES:
+    # Basic usage
+    $0
+
+    # Run with JSON output
+    $0 --json
+
+    # Quick check without I/O stats
+    $0 --quick
+
+    # Custom alert thresholds
+    $0 --cpu-alert 70 --mem-alert 80
+
+    # Security audit only
+    sudo $0 --security-only
+
+EOF
+    exit 0
+}
+
+# Parse command-line arguments
+QUICK_MODE=false
+SECURITY_ONLY=false
+DISABLE_COLOR=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            ;;
+        -j|--json)
+            ENABLE_JSON_OUTPUT=true
+            shift
+            ;;
+        -q|--quick)
+            QUICK_MODE=true
+            shift
+            ;;
+        -s|--security-only)
+            SECURITY_ONLY=true
+            shift
+            ;;
+        --no-color)
+            DISABLE_COLOR=true
+            shift
+            ;;
+        --cpu-alert)
+            ALERT_CPU_THRESHOLD="$2"
+            shift 2
+            ;;
+        --mem-alert)
+            ALERT_MEM_THRESHOLD="$2"
+            shift 2
+            ;;
+        --disk-alert)
+            ALERT_DISK_THRESHOLD="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Disable colors if requested
+if [ "$DISABLE_COLOR" = true ]; then
+    RED=''
+    GREEN=''
+    YELLOW=''
+    CYAN=''
+    MAGENTA=''
+    BLUE=''
+    RESET=''
+    BOLD=''
+    NORMAL=''
+fi
 
 #==============================================================================
 # Utility Functions
@@ -110,7 +217,7 @@ get_os_info() {
     
     # Last boot time
     if check_command who; then
-        echo -e "${GREEN}Last Boot:${RESET}    $(who -b | awk '{print $3, $4}')"
+        echo -e "${GREEN}Last Boot:${RESET}    $(who -b 2>/dev/null | awk '{print $3, $4}')"
     fi
 }
 
@@ -133,7 +240,6 @@ get_cpu_info() {
         
         json_data[cpu_model]="$cpu_model"
         json_data[cpu_cores]="$cpu_cores"
-        json_data[cpu_threads]="$cpu_threads"
     fi
     
     # CPU Usage
@@ -157,7 +263,6 @@ get_cpu_info() {
     # Load Average
     local load_avg=$(uptime | awk -F'load average:' '{print $2}' | xargs)
     echo -e "${GREEN}Load Average:${RESET}  $load_avg"
-    json_data[load_avg]="$load_avg"
     
     # Uptime
     read system_uptime _ < /proc/uptime
@@ -173,7 +278,6 @@ get_cpu_info() {
     
     echo -e "${GREEN}Uptime:${RESET}        $uptime_str"
     json_data[uptime_seconds]="$total_seconds"
-    json_data[uptime_str]="$uptime_str"
 }
 
 #==============================================================================
@@ -203,8 +307,7 @@ get_memory_info() {
     
     json_data[memory_total_gb]="$total_gb"
     json_data[memory_used_percent]="$used_percent"
-    json_data[memory_free_percent]="$free_percent"
-
+    
     # Swap information
     local swap_total=$(awk '/SwapTotal/ {print $2}' /proc/meminfo)
     local swap_free=$(awk '/SwapFree/ {print $2}' /proc/meminfo)
@@ -216,8 +319,6 @@ get_memory_info() {
         local swap_percent=$(awk -v u=$swap_used -v t=$swap_total 'BEGIN { printf("%.1f", (u / t) * 100) }')
         
         printf "${GREEN}Swap Used:${RESET}    ${YELLOW}%6.2f GB${RESET} / %.2f GB (%s%%)\n" "$swap_used_gb" "$swap_total_gb" "$swap_percent"
-        json_data[swap_total_gb]="$swap_total_gb"
-        json_data[swap_used_percent]="$swap_percent"
     fi
     
     # Alert if high memory
@@ -234,21 +335,21 @@ get_disk_info() {
     print_header "💾 Disk Usage"
     
     # Show all mounted filesystems
-    df -h -x tmpfs -x devtmpfs -x squashfs | awk 'NR==1 {printf "%-20s %8s %8s %8s %6s %s\n", $1, $2, $3, $4, $5, $6} NR>1 {printf "%-20s %8s %8s %8s %6s %s\n", $1, $2, $3, $4, $5, $6}'
+    df -h -x tmpfs -x devtmpfs -x squashfs 2>/dev/null | awk 'NR==1 {printf "%-20s %8s %8s %8s %6s %s\n", $1, $2, $3, $4, $5, $6} NR>1 {printf "%-20s %8s %8s %8s %6s %s\n", $1, $2, $3, $4, $5, $6}'
     
     # Check for alerts on root partition
-    local root_usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+    local root_usage=$(df / 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//')
     json_data[disk_root_usage]="$root_usage"
     
-    if [ "$root_usage" -gt "$ALERT_DISK_THRESHOLD" ]; then
+    if [ -n "$root_usage" ] && [ "$root_usage" -gt "$ALERT_DISK_THRESHOLD" ]; then
         print_alert "Root partition usage is above ${ALERT_DISK_THRESHOLD}%!"
     fi
     
-    # I/O Statistics (if iostat available)
-    if check_command iostat; then
+    # I/O Statistics (if iostat available and not in quick mode)
+    if [ "$QUICK_MODE" = false ] && check_command iostat; then
         echo ""
-        echo -e "${CYAN}Disk I/O:${RESET}"
-        iostat -x 1 2 | tail -n +4 | head -n -1
+        echo -e "${CYAN}Disk I/O Statistics (Average):${RESET}"
+        iostat -x 1 2 2>/dev/null | awk '/^avg-cpu:/{flag=1} flag' | head -15
     fi
 }
 
@@ -362,13 +463,13 @@ get_security_info() {
     fi
     
     # Top failed login IPs (last 24 hours)
-    echo -e "${CYAN}Top IPs with Failed Logins (Last 24h):${RESET}"
+    echo -e "${CYAN}Top IPs with Failed SSH Login Attempts (Last 24h):${RESET}"
     local failed_ips=$(grep "Failed password" "$auth_log" | \
         awk '{for(i=1;i<=NF;i++){if($i=="from"){print $(i+1)}}}' | \
         sort | uniq -c | sort -rn | head -10)
     
     if [ -n "$failed_ips" ]; then
-        echo "$failed_ips" | awk '{printf "  %5d  %s\n", $1, $2}'
+        echo "$failed_ips" | awk '{printf "  %5d attempts  %s\n", $1, $2}'
         
         # Check for brute force attempts
         local max_attempts=$(echo "$failed_ips" | head -1 | awk '{print $1}')
@@ -376,14 +477,37 @@ get_security_info() {
             print_alert "Possible brute force attack detected! IP with $max_attempts failed attempts."
         fi
     else
-        print_success "No failed login attempts in the last 24 hours"
+        print_success "No failed SSH login attempts in the last 24 hours"
     fi
     
-    # Recent failed logins (last 10)
+    # Recent failed logins (last 5)
     echo ""
-    echo -e "${CYAN}Recent Failed Login Attempts:${RESET}"
-    grep -E "Failed password|authentication failure" "$auth_log" | tail -5 | \
-        awk '{print $1, $2, $3, "→", substr($0, index($0,$9))}'
+    echo -e "${CYAN}Recent Failed SSH Login Attempts (Last 5):${RESET}"
+    local recent_failures=$(grep "Failed password" "$auth_log" | tail -5)
+    
+    if [ -n "$recent_failures" ]; then
+        echo "$recent_failures" | while read -r line; do
+            local timestamp=$(echo "$line" | awk '{print $1}')
+            local user=$(echo "$line" | grep -oP 'for (\w+|invalid user \w+)' | awk '{print $NF}')
+            local ip=$(echo "$line" | grep -oP 'from \S+' | awk '{print $2}')
+            echo "  $timestamp → User: $user, IP: $ip"
+        done
+    else
+        echo "  No recent failed attempts found"
+    fi
+    
+    # Check for sudo authentication failures
+    echo ""
+    echo -e "${CYAN}Failed Sudo Attempts (Last 5):${RESET}"
+    local sudo_failures=$(grep "authentication failure" "$auth_log" | grep "sudo" | tail -5)
+    
+    if [ -n "$sudo_failures" ]; then
+        echo "$sudo_failures" | while read -r line; do
+            echo "  $(echo "$line" | awk '{print $1, $2, $3}') → $(echo "$line" | grep -oP 'user=\w+')"
+        done
+    else
+        echo "  No sudo authentication failures found"
+    fi
 }
 
 #==============================================================================
@@ -393,24 +517,63 @@ get_security_info() {
 get_service_status() {
     print_header "⚙️  Critical Services Status"
     
-    local services=("sshd" "ssh" "docker" "nginx" "apache2" "httpd" "mysql" "mariadb" "postgresql")
+    local services=("sshd" "ssh" "docker" "nginx" "apache2" "httpd" "mysql" "mariadb" "postgresql" "redis" "mongodb")
     local found_services=0
     
     for service in "${services[@]}"; do
-        if systemctl list-unit-files | grep -q "^${service}.service"; then
+        if systemctl list-unit-files 2>/dev/null | grep -q "^${service}.service"; then
             local status=$(systemctl is-active "$service" 2>/dev/null || echo "inactive")
+            local enabled=$(systemctl is-enabled "$service" 2>/dev/null || echo "disabled")
+            
             if [ "$status" = "active" ]; then
-                echo -e "${GREEN}✓${RESET} ${service}: ${GREEN}running${RESET}"
+                echo -e "${GREEN}✓${RESET} ${service}: ${GREEN}running${RESET} (${enabled})"
                 ((found_services++))
-            elif systemctl is-enabled "$service" &>/dev/null; then
-                echo -e "${RED}✗${RESET} ${service}: ${RED}stopped${RESET}"
+            elif [ "$enabled" != "disabled" ]; then
+                echo -e "${RED}✗${RESET} ${service}: ${RED}stopped${RESET} (${enabled})"
                 ((found_services++))
             fi
         fi
     done
     
+    # Check for Docker containers if Docker is running
+    if systemctl is-active docker &>/dev/null && check_command docker; then
+        local running_containers=$(docker ps -q 2>/dev/null | wc -l)
+        local total_containers=$(docker ps -aq 2>/dev/null | wc -l)
+        
+        if [ "$total_containers" -gt 0 ]; then
+            echo ""
+            echo -e "${CYAN}Docker Containers:${RESET} $running_containers running / $total_containers total"
+            ((found_services++))
+        fi
+    fi
+    
     if [ $found_services -eq 0 ]; then
-        echo "No monitored services found"
+        echo "No monitored services found or systemctl not available"
+    fi
+}
+
+#==============================================================================
+# System Temperature (if sensors available)
+#==============================================================================
+
+get_temperature_info() {
+    if [ "$QUICK_MODE" = false ] && check_command sensors; then
+        print_header "🌡️  System Temperature"
+        
+        sensors 2>/dev/null | grep -E "Core|temp|Package" | head -10
+    fi
+}
+
+#==============================================================================
+# NFS Mounts
+#==============================================================================
+
+get_nfs_mounts() {
+    local nfs_mounts=$(df -h -t nfs -t nfs4 2>/dev/null)
+    
+    if [ -n "$nfs_mounts" ] && [ "$(echo "$nfs_mounts" | wc -l)" -gt 1 ]; then
+        print_header "📡 NFS Mounts"
+        echo "$nfs_mounts"
     fi
 }
 
@@ -440,10 +603,10 @@ print_health_summary() {
     
     # Check Disk
     local disk_usage=${json_data[disk_root_usage]:-0}
-    if [ "$disk_usage" -gt 90 ]; then
+    if [ -n "$disk_usage" ] && [ "$disk_usage" -gt 90 ]; then
         health_score=$((health_score - 30))
         issues+=("Critical disk usage: ${disk_usage}%")
-    elif [ "$disk_usage" -gt 80 ]; then
+    elif [ -n "$disk_usage" ] && [ "$disk_usage" -gt 80 ]; then
         health_score=$((health_score - 15))
         issues+=("High disk usage: ${disk_usage}%")
     fi
@@ -498,6 +661,13 @@ main() {
     # Setup
     setup_logging
     
+    # Security-only mode
+    if [ "$SECURITY_ONLY" = true ]; then
+        print_header "🔒 Security Audit - $(date '+%Y-%m-%d %H:%M:%S')"
+        get_security_info
+        exit 0
+    fi
+    
     # Header
     echo -e "${MAGENTA}${BOLD}"
     echo "╔════════════════════════════════════════════════════════════════════════════╗"
@@ -512,11 +682,13 @@ main() {
     get_cpu_info
     get_memory_info
     get_disk_info
+    get_nfs_mounts
     get_network_info
     get_process_info
     get_user_sessions
     get_security_info
     get_service_status
+    get_temperature_info
     print_health_summary
     
     # Export JSON if enabled

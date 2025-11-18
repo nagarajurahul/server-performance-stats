@@ -296,7 +296,7 @@ get_process_info() {
     
     # Process count
     local total_processes=$(ps aux | wc -l)
-    local zombie_processes=$(ps aux | awk '{print $8}' | grep -c '^Z' || echo 0)
+    local zombie_processes=$(ps aux | awk '$8 ~ /^Z/ {count++} END {print count+0}')
     
     echo ""
     echo -e "${GREEN}Total Processes:${RESET}  $total_processes"

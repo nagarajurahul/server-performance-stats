@@ -133,6 +133,7 @@ get_cpu_info() {
         
         json_data[cpu_model]="$cpu_model"
         json_data[cpu_cores]="$cpu_cores"
+        json_data[cpu_threads]="$cpu_threads"
     fi
     
     # CPU Usage
@@ -156,6 +157,7 @@ get_cpu_info() {
     # Load Average
     local load_avg=$(uptime | awk -F'load average:' '{print $2}' | xargs)
     echo -e "${GREEN}Load Average:${RESET}  $load_avg"
+    json_data[load_avg]="$load_avg"
     
     # Uptime
     read system_uptime _ < /proc/uptime
@@ -171,6 +173,7 @@ get_cpu_info() {
     
     echo -e "${GREEN}Uptime:${RESET}        $uptime_str"
     json_data[uptime_seconds]="$total_seconds"
+    json_data[uptime_str]="$uptime_str"
 }
 
 #==============================================================================
@@ -200,7 +203,8 @@ get_memory_info() {
     
     json_data[memory_total_gb]="$total_gb"
     json_data[memory_used_percent]="$used_percent"
-    
+    json_data[memory_free_percent]="$free_percent"
+
     # Swap information
     local swap_total=$(awk '/SwapTotal/ {print $2}' /proc/meminfo)
     local swap_free=$(awk '/SwapFree/ {print $2}' /proc/meminfo)
@@ -212,6 +216,8 @@ get_memory_info() {
         local swap_percent=$(awk -v u=$swap_used -v t=$swap_total 'BEGIN { printf("%.1f", (u / t) * 100) }')
         
         printf "${GREEN}Swap Used:${RESET}    ${YELLOW}%6.2f GB${RESET} / %.2f GB (%s%%)\n" "$swap_used_gb" "$swap_total_gb" "$swap_percent"
+        json_data[swap_total_gb]="$swap_total_gb"
+        json_data[swap_used_percent]="$swap_percent"
     fi
     
     # Alert if high memory

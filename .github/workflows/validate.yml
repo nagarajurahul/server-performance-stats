@@ -16,7 +16,7 @@ jobs:
     # ------------------------------------------
     # CONTRACT VALIDATION
     # ------------------------------------------
-    - name: Validate contract: required files
+    - name: Validate contract - required files
       run: |
         echo "🔍 Validating contract requirements..."
 

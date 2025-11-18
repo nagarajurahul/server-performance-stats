@@ -6,7 +6,6 @@ This repository MUST always contain the following artifacts:
 - **enhanced-server-stats.sh**
 - Must support non-interactive execution
 - Must output plain text logs
-- Must exit with code 0 on success
 - Must not require sudo for standard metrics
 
 ## 2. Stability Requirements

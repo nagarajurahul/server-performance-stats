@@ -314,12 +314,25 @@ get_user_sessions() {
     print_header "👥 Active User Sessions"
     
     echo -e "${CYAN}Currently Logged In:${RESET}"
-    printf "%-12s %-12s %-20s %s\n" "USER" "TTY" "LOGIN-TIME" "FROM"
-    who | awk '{printf "%-12s %-12s %-20s %s\n", $1, $2, $3" "$4, $5}'
     
-    echo ""
-    local unique_users=$(who | awk '{print $1}' | sort -u | wc -l)
-    echo -e "${GREEN}Unique Users:${RESET} $unique_users"
+    if [ -z "$(who)" ]; then
+        echo "No users currently logged in"
+    else
+        printf "%-12s %-12s %-20s %s\n" "USER" "TTY" "LOGIN-TIME" "FROM"
+        who | while read -r line; do
+            local user=$(echo "$line" | awk '{print $1}')
+            local tty=$(echo "$line" | awk '{print $2}')
+            local date_time=$(echo "$line" | awk '{print $3, $4}')
+            local from=$(echo "$line" | awk '{print $5}' | tr -d '()')
+            printf "%-12s %-12s %-20s %s\n" "$user" "$tty" "$date_time" "$from"
+        done
+        
+        echo ""
+        local unique_users=$(who | awk '{print $1}' | sort -u | wc -l)
+        local total_sessions=$(who | wc -l)
+        echo -e "${GREEN}Unique Users:${RESET}    $unique_users"
+        echo -e "${GREEN}Total Sessions:${RESET}  $total_sessions"
+    fi
 }
 
 #==============================================================================

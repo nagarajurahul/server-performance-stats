@@ -672,7 +672,7 @@ main() {
     echo -e "${MAGENTA}${BOLD}"
     echo "╔════════════════════════════════════════════════════════════════════════════╗"
     echo "║                    ENHANCED SERVER STATISTICS REPORT                       ║"
-    echo "║                          Version $SCRIPT_VERSION                                      ║"
+    echo "║                          Version $SCRIPT_VERSION                                       ║"
     echo "╚════════════════════════════════════════════════════════════════════════════╝"
     echo -e "${RESET}"
     echo "Generated: $(date '+%Y-%m-%d %H:%M:%S %Z')"

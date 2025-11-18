@@ -47,6 +47,9 @@ jobs:
       with:
         severity: error
 
+    - name: Install optional tools
+      run: sudo apt-get update && sudo apt-get install -y sysstat bc lm-sensors
+
     # ------------------------------------------
     # RUNTIME VALIDATION (must run without sudo)
     # ------------------------------------------

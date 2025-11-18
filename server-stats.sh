@@ -166,7 +166,7 @@ elif [ -f /var/log/secure ]; then
   # RHEL/CentOS
   # grep "Failed password" /var/log/secure | awk '{print $11}' | uniq -c | sort -nr
   print_header "Top IPs causing failed logins:"
-  grep "Failed password" /var/log/auth.log | awk '{for(i=1;i<=NF;i++){if($i=="from"){print $(i+1)}}}' | sort | uniq -c | sort -nr
+  grep "Failed password" /var/log/secure | awk '{for(i=1;i<=NF;i++){if($i=="from"){print $(i+1)}}}' | sort | uniq -c | sort -nr
   print_header "Logs of Failed Log In Attempts"
   grep -E "Failed|Failure" /var/log/secure
 else

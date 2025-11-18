@@ -20,7 +20,7 @@ jobs:
           exit 1
         fi
 
-        chmod +x server-stats.sh
+        chmod +x enhanced-server-stats.sh
     
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@v2

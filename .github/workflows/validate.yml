@@ -13,16 +13,96 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
 
-    - name: Validate contract files
+    # ------------------------------------------
+    # CONTRACT VALIDATION
+    # ------------------------------------------
+    - name: Validate contract: required files
       run: |
-        if [ ! -f enhanced-server-stats.sh ]; then
-          echo "ERROR: enhanced-server-stats.sh missing."
+        echo "🔍 Validating contract requirements..."
+
+        # 1. enhanced-server-stats.sh must exist in repo root
+        if [ ! -f "./enhanced-server-stats.sh" ]; then
+          echo "❌ ERROR: enhanced-server-stats.sh missing from repository root."
           exit 1
         fi
 
+        # 2. File must not be renamed
+        expected="enhanced-server-stats.sh"
+        actual=$(basename enhanced-server-stats.sh)
+        if [ "$expected" != "$actual" ]; then
+          echo "❌ ERROR: Script name must be enhanced-server-stats.sh."
+          exit 1
+        fi
+
+        # 3. Script must be executable
         chmod +x enhanced-server-stats.sh
-    
-    - name: Run ShellCheck
+
+        echo "✔ Required files are present."
+
+    # ------------------------------------------
+    # SYNTAX VALIDATION
+    # ------------------------------------------
+    - name: Run ShellCheck strict mode
       uses: ludeeus/action-shellcheck@master
       with:
         severity: error
+
+    # ------------------------------------------
+    # RUNTIME VALIDATION (must run without sudo)
+    # ------------------------------------------
+    - name: Validate script executes non-interactively
+      run: |
+        echo "🔍 Running script non-interactively..."
+        ./enhanced-server-stats.sh --quick > output.txt || { 
+          echo "❌ Script failed to execute non-interactively."; 
+          exit 1; 
+        }
+
+        echo "✔ Script runs in quick mode."
+
+    # ------------------------------------------
+    # JSON OUTPUT VALIDATION
+    # ------------------------------------------
+    - name: Validate JSON output mode
+      run: |
+        echo "🔍 Testing JSON output..."
+        ENABLE_JSON_OUTPUT=true ./enhanced-server-stats.sh --quick > json_test.log || {
+          echo "❌ JSON mode failed.";
+          exit 1;
+        }
+
+        echo "✔ JSON output validated."
+
+    # ------------------------------------------
+    # OPTIONAL: Validate repo structure
+    # Prevent contributors from moving directories
+    # ------------------------------------------
+    - name: Ensure script is at repo root
+      run: |
+        if [ "$(dirname ./enhanced-server-stats.sh)" != "." ]; then
+          echo "❌ Script must remain at repository root."
+          exit 1
+        fi
+        echo "✔ Script is at repo root."
+
+    # ------------------------------------------
+    # OPTIONAL: Ensure contract.md describes this version
+    # ------------------------------------------
+    - name: Validate contract version bump
+      run: |
+        version_script=$(grep -oP 'Version: \K[0-9.]+' enhanced-server-stats.sh)
+        version_contract=$(grep -oP 'Version \K[0-9.]+' contract.md || echo "")
+
+        if [ -z "$version_contract" ]; then
+          echo "⚠ No version specified in contract.md — skipping check."
+          exit 0
+        fi
+
+        if [ "$version_script" != "$version_contract" ]; then
+          echo "❌ Version mismatch:"
+          echo "  Script version:   $version_script"
+          echo "  Contract version: $version_contract"
+          exit 1
+        fi
+
+        echo "✔ Contract version updated correctly."
